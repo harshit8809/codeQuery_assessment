@@ -33,7 +33,20 @@ export const appApis = createApi({
                 body: body
             })
 
-        })
+        }),
+        updateCart: builder.mutation({
+            query: ({ id, body }) => ({
+                url: `/carts/${id}`,
+                method: 'PUT',
+                body,
+            }),
+        }),
+        deleteCart: builder.mutation({
+            query: (id) => ({
+                url: `/carts/${id}`,
+                method: 'DELETE',
+            }),
+        }),
 
     }),
 });
@@ -42,5 +55,5 @@ export const {
     //product
     useGetProductsQuery, useGetProductByIdQuery,
     //cart
-    useGetAllCartsQuery, useAddToCartMutation
+    useGetAllCartsQuery, useAddToCartMutation, useUpdateCartMutation, useDeleteCartMutation
 } = appApis;

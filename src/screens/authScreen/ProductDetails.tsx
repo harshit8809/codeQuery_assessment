@@ -11,10 +11,14 @@ import {
 
 import { useAddToCartMutation, useGetProductByIdQuery } from '../../redux/api/appApis';
 import BaseButton from '../../components/BaseButton';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../../redux/slices/cartSlice';
 
 const ProductDetails = ({ route }: any) => {
     const { data } = route?.params || {};
-    const [addToCart, { isLoading: cartLoading }] =
+    const dispatch = useDispatch();
+
+    const [addToCartApi, { isLoading: cartLoading }] =
         useAddToCartMutation();
 
     const {
@@ -32,31 +36,34 @@ const ProductDetails = ({ route }: any) => {
 
     const handleCart = async () => {
         try {
-            const payload = {
-                id: 8,
-                userId: 2,
-                products: [
-                    {
-                        id: productData?.id,
-                        title: productData?.title,
-                        price: productData?.price,
-                        description: productData?.description,
-                        category: productData?.category,
-                        image: productData?.image,
-                    },
-                ],
-            };
-
-            const response = await addToCart(
-                payload,
-            ).unwrap();
-
-            console.log('ADD TO CART RESPONSE', response);
-
+          // Optional Fake API Call
+          await addToCartApi({
+            userId: 2,
+            products: [
+              {
+                productId: productData?.id,
+                quantity: 1,
+              },
+            ],
+          });
+      
+          // Actual App Cart State
+          dispatch(
+            addToCart({
+              id: productData?.id,
+              title: productData?.title,
+              image: productData?.image,
+              price: productData?.price,
+              category: productData?.category,
+            }),
+          );
+      
+          console.log('Added Successfully');
+      
         } catch (error) {
-            console.log('CART ERROR', error);
+          console.log(error);
         }
-    };
+      };
 
     return (
         <View style={styles.container}>

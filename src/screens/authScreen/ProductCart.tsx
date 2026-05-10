@@ -1,68 +1,124 @@
 import React, { useMemo } from 'react';
-
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
-
 import {
-  useGetAllCartsQuery,
-  useGetProductsQuery,
-} from '../../redux/api/appApis';
+  useDispatch,
+  useSelector,
+} from 'react-redux';
+import {
+  decreaseQuantity,
+  increaseQuantity,
+  removeFromCart,
+} from '../../redux/slices/cartSlice';
+import BaseButton from '../../components/BaseButton';
+import { Trash2 } from 'lucide-react-native';
+import { useDeleteCartMutation, useUpdateCartMutation } from '../../redux/api/appApis';
 
 const ProductCart = () => {
-  const userId = 2;
 
-  const {
-    data: cartData,
-    isLoading,
-  } = useGetAllCartsQuery('');
+  const dispatch = useDispatch();
+  const [updateCartApi] =
+    useUpdateCartMutation();
 
-  const {
-    data: products,
-  } = useGetProductsQuery('');
+  const [deleteCartApi] =
+    useDeleteCartMutation();
 
-  // Get User Cart
-  const userCart = useMemo(() => {
-    return cartData?.find(
-      (item: any) => item.userId === userId,
+  const cartItems = useSelector(
+    (state: any) => state.cart.cartItems,
+  );
+
+  // Grand Total
+  const totalAmount = useMemo(() => {
+    return cartItems.reduce(
+      (acc: number, item: any) =>
+        acc + item.price * item.quantity,
+      0,
     );
-  }, [cartData]);
+  }, [cartItems]);
 
-  // Merge Product Details
-  const mappedCartProducts = useMemo(() => {
-    if (!userCart || !products) {
-      return [];
+  const handleIncrease = async (
+    item: any,
+  ) => {
+    // Max Quantity Limit
+    if (item.quantity >= 10) {
+      return;
     }
 
-    return userCart.products.map(
-      (cartItem: any) => {
-        const productDetails = products.find(
-          (product: any) =>
-            product.id === cartItem.productId,
+    try {
+      // Fake API Call
+      await updateCartApi({
+        id: item.id,
+
+        body: {
+          userId: 2,
+
+          products: [
+            {
+              productId: item.id,
+              quantity: item.quantity + 1,
+            },
+          ],
+        },
+      });
+
+      // Redux Update
+      dispatch(
+        increaseQuantity(item.id),
+      );
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleDecrease = async (
+    item: any,
+  ) => {
+    try {
+      // Delete Item
+      if (item.quantity <= 1) {
+        await deleteCartApi(item.id);
+        dispatch(
+          removeFromCart(item.id),
         );
 
-        return {
-          ...productDetails,
-          quantity: cartItem.quantity,
-        };
-      },
-    );
-  }, [userCart, products]);
+        return;
+      }
 
-  if (isLoading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+      // Update Quantity
+      await updateCartApi({
+        id: item.id,
+        body: {
+          userId: 2,
+
+          products: [
+            {
+              productId: item.id,
+              quantity: item.quantity - 1,
+            },
+          ],
+        },
+      });
+
+      dispatch(
+        decreaseQuantity(item.id),
+      );
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const renderItem = ({ item }: any) => {
+    const itemTotal =
+      item.price * item.quantity;
+
     return (
       <View style={styles.card}>
 
@@ -87,32 +143,88 @@ const ProductCart = () => {
             {item.category}
           </Text>
 
-          {/* Price + Quantity */}
+          {/* Price */}
+          <Text style={styles.price}>
+            ${item.price}
+          </Text>
+
+          {/* Quantity Row */}
           <View style={styles.bottomRow}>
 
-            <Text style={styles.price}>
-              ${item.price}
-            </Text>
+            {/* Quantity Controls */}
+            <View style={styles.quantityWrapper}>
 
-            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() =>
+                  handleDecrease(item)
+                }>
+                {item.quantity < 2 ? <Trash2
+                  size={18}
+                  color="black"
+                  strokeWidth={2}
+                /> :
+                  <Text style={styles.actionText}>
+                    -
+                  </Text>}
+
+              </TouchableOpacity>
+
               <Text style={styles.quantityText}>
-                Qty: {item.quantity}
+                {item.quantity}
               </Text>
+
+              <TouchableOpacity
+                disabled={item.quantity >= 10}
+                style={[
+                  styles.quantityButton,
+                  item.quantity >= 10 && {
+                    opacity: 0.4,
+                  },
+                ]}
+                onPress={() =>
+                  handleIncrease(item)
+                }>
+
+                <Text style={styles.actionText}>
+                  +
+                </Text>
+              </TouchableOpacity>
+
             </View>
+
+            {/* Item Total */}
+            <Text style={styles.itemTotal}>
+              ${itemTotal.toFixed(2)}
+            </Text>
 
           </View>
 
         </View>
-
       </View>
     );
   };
+
+  // Empty Cart
+  if (cartItems.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyTitle}>
+          Your Cart is Empty
+        </Text>
+
+        <Text style={styles.emptySubtitle}>
+          Add products to continue shopping
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
 
       <FlatList
-        data={mappedCartProducts}
+        data={cartItems}
         keyExtractor={item =>
           item.id.toString()
         }
@@ -120,16 +232,29 @@ const ProductCart = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: 20,
-          paddingBottom: 30,
+          paddingBottom: 120,
         }}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              No Cart Items Found
-            </Text>
-          </View>
-        )}
       />
+
+      {/* Bottom Total */}
+      <View style={styles.bottomContainer}>
+
+        <View>
+          <Text style={styles.totalLabel}>
+            Total Amount
+          </Text>
+
+          <Text style={styles.totalAmount}>
+            ${totalAmount.toFixed(2)}
+          </Text>
+        </View>
+
+        <BaseButton
+          title='Checkout'
+          onPress={() => { }}
+        />
+
+      </View>
 
     </View>
   );
@@ -142,12 +267,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F7FA',
     paddingHorizontal: 16,
-  },
-
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 
   card: {
@@ -184,7 +303,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     marginLeft: 14,
-
     justifyContent: 'space-between',
   },
 
@@ -197,12 +315,20 @@ const styles = StyleSheet.create({
   },
 
   category: {
-    marginTop: 6,
-
     fontSize: 13,
     color: '#777',
 
+    marginTop: 4,
+
     textTransform: 'capitalize',
+  },
+
+  price: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111',
+
+    marginTop: 10,
   },
 
   bottomRow: {
@@ -213,34 +339,113 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  price: {
-    fontSize: 20,
+  quantityWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    backgroundColor: '#F2F4F7',
+
+    borderRadius: 12,
+
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+
+  quantityButton: {
+    width: 28,
+    height: 28,
+
+    borderRadius: 14,
+
+    backgroundColor: '#fff',
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  actionText: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#111',
   },
 
-  quantityContainer: {
-    backgroundColor: '#F2F4F7',
-
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-
-    borderRadius: 10,
-  },
-
   quantityText: {
-    fontSize: 13,
-    fontWeight: '600',
+    marginHorizontal: 14,
+
+    fontSize: 15,
+    fontWeight: '700',
     color: '#111',
   },
 
-  emptyContainer: {
-    marginTop: 80,
+  itemTotal: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111',
+  },
+
+  bottomContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+
+    backgroundColor: '#fff',
+
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
 
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
+  totalLabel: {
+    fontSize: 13,
+    color: '#777',
+  },
+
+  totalAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111',
+
+    marginTop: 4,
+  },
+
+  checkoutButton: {
+    backgroundColor: '#111',
+
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+
+    borderRadius: 14,
+  },
+
+  checkoutText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111',
+  },
+
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#777',
+
+    marginTop: 10,
   },
 });

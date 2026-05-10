@@ -1,31 +1,21 @@
 import {
     ActivityIndicator,
     FlatList,
-    Image,
     RefreshControl,
     StyleSheet,
-    Text,
-    TouchableOpacity,
     View,
 } from 'react-native';
-
-import React, { useCallback } from 'react';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import React, { useCallback, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
-
-import { logout } from '../../redux/slices/authSlice';
-
 import { useGetProductsQuery } from '../../redux/api/appApis';
 import ProductCard from '../../components/ProductCard';
 import { useNavigation } from '@react-navigation/native';
 import { SCREENS } from '../../constants/constant';
-
-
+import SearchBar from '../../components/SearchBar';
+import useDebounce from '../../hooks/useDebounce';
+import EmptyList from '../../components/section/EmptyList';
 
 const Home = () => {
-    const dispatch = useDispatch();
     const navigation = useNavigation<any>()
     const {
         data,
@@ -34,12 +24,59 @@ const Home = () => {
         refetch,
     } = useGetProductsQuery('');
 
+    const [search, setSearch] =
+        useState('');
 
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('token');
+    const [selectedCategory, setSelectedCategory] =
+        useState('All');
 
-        dispatch(logout());
-    };
+    const debouncedSearch =
+        useDebounce(search, 500);
+
+    const categories = useMemo(() => {
+        if (!data) {
+            return ['All'];
+        }
+        const uniqueCategories = [
+            ...new Set(
+                data.map(
+                    (item: any) => item.category,
+                ),
+            ),
+        ];
+
+        return ['All', ...uniqueCategories];
+    }, [data]);
+
+    const filteredProducts = useMemo(() => {
+        if (!data) {
+            return [];
+        }
+
+        return data.filter((item: any) => {
+            const matchesSearch =
+                item.title
+                    .toLowerCase()
+                    .includes(
+                        debouncedSearch.toLowerCase(),
+                    );
+
+            const matchesCategory =
+                selectedCategory === 'All'
+                    ? true
+                    : item.category ===
+                    selectedCategory;
+
+            return (
+                matchesSearch &&
+                matchesCategory
+            );
+        });
+    }, [
+        data,
+        debouncedSearch,
+        selectedCategory,
+    ]);
 
     const renderItem = useCallback(({ item }: any) => {
         return <ProductCard item={item} onPress={() => navigation.navigate(SCREENS.PRODUCT_DETAILS, { data: item?.id })} />;
@@ -59,9 +96,16 @@ const Home = () => {
 
     return (
         <View style={styles.container}>
+            <SearchBar
+                search={search}
+                setSearch={setSearch}
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+            />
             {/* Product List */}
             <FlatList
-                data={data}
+                data={filteredProducts}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 numColumns={2}
@@ -73,6 +117,7 @@ const Home = () => {
                     paddingBottom: 30,
                     marginTop: 20
                 }}
+                ListEmptyComponent={() => <EmptyList src={require("../../assets/image/emptyList.jpg")} text="No data found"/>}
                 refreshControl={
                     <RefreshControl
                         refreshing={isFetching}
@@ -81,7 +126,6 @@ const Home = () => {
                 }
                 initialNumToRender={6}
                 maxToRenderPerBatch={6}
-                windowSize={5}
                 removeClippedSubviews
             />
         </View>
@@ -101,6 +145,16 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    emptyContainer: {
+        marginTop: 80,
+        alignItems: 'center',
+    },
+
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
     },
 
 });

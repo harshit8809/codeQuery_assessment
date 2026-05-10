@@ -1,22 +1,85 @@
-import React, {memo} from 'react';
+import React, { memo, useCallback } from 'react';
 
 import {
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {
+  useNavigation,
+} from '@react-navigation/native';
+
+import {
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+
+import {
+  useDispatch,
+  useSelector,
+} from 'react-redux';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {
+  ArrowLeft,
+  LogOut,
+  ShoppingCart,
+} from 'lucide-react-native';
+
+import { SCREENS } from '../constants/constant';
+
+import { logout } from '../redux/slices/authSlice';
+import HeaderActionButton from './HeaderActionButton';
+
+interface CommonHeaderProps {
+  title: string;
+  showBack?: boolean;
+  showCart?: boolean;
+  showLogout?: boolean;
+}
 
 const CommonHeader = ({
   title,
-  leftIcon,
-  rightIcon,
-  onPressLeft,
-  onPressRight,
-}: any) => {
-  const {top} = useSafeAreaInsets();
+  showBack = false,
+  showCart = false,
+  showLogout = false,
+}: CommonHeaderProps) => {
+  const navigation = useNavigation<any>();
+
+  const dispatch = useDispatch();
+
+  const { top } = useSafeAreaInsets();
+
+  const cartCount = useSelector(
+    (state: any) =>
+      state.cart.cartItems.length,
+  );
+
+  // Back Navigation
+  const handleBack = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate(SCREENS.HOME);
+    }
+  }, [navigation]);
+
+  // Cart Navigation
+  const handleCart = useCallback(() => {
+    navigation.navigate(
+      SCREENS.PRODUCT_CART,
+    );
+  }, [navigation]);
+
+  // Logout
+  const handleLogout = useCallback(async () => {
+    await AsyncStorage.removeItem(
+      'token',
+    );
+
+    dispatch(logout());
+  }, [dispatch]);
 
   return (
     <View
@@ -24,44 +87,61 @@ const CommonHeader = ({
         styles.container,
         {
           paddingTop: top,
-          height: top + 60,
+          height: top + 64,
         },
       ]}>
-      
-      {/* Left Section */}
+
+      {/* Left */}
       <View style={styles.leftContainer}>
 
-        {leftIcon && (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onPressLeft}
-            style={styles.iconButton}>
-            
-            {/* {leftIcon} */}
-            <Text>{"<-"}</Text>
-          </TouchableOpacity>
+        {showBack && (
+          <HeaderActionButton
+            onPress={handleBack}>
+
+            <ArrowLeft
+              size={22}
+              color="#111"
+              strokeWidth={2}
+            />
+          </HeaderActionButton>
         )}
 
         <Text
           numberOfLines={1}
           style={styles.title}>
-          
+
           {title}
         </Text>
-
       </View>
 
-      {/* Right Section */}
+      {/* Right */}
       <View style={styles.rightContainer}>
-        {rightIcon && (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onPressRight}
-            style={styles.iconButton}>
-            
-            {rightIcon}
-          </TouchableOpacity>
+
+        {showCart && (
+          <HeaderActionButton
+            onPress={handleCart}
+            badgeCount={cartCount}>
+
+            <ShoppingCart
+              size={22}
+              color="#111"
+              strokeWidth={2}
+            />
+          </HeaderActionButton>
         )}
+
+        {showLogout && (
+          <HeaderActionButton
+            onPress={handleLogout}>
+
+            <LogOut
+              size={22}
+              color="#111"
+              strokeWidth={2}
+            />
+          </HeaderActionButton>
+        )}
+
       </View>
 
     </View>
@@ -72,7 +152,7 @@ export default memo(CommonHeader);
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF',
 
     flexDirection: 'row',
     alignItems: 'center',
@@ -88,40 +168,32 @@ const styles = StyleSheet.create({
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 3,
 
     elevation: 3,
   },
 
   leftContainer: {
+    flex: 1,
+
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
 
   rightContainer: {
-    marginLeft: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   title: {
+    flexShrink: 1,
+
+    marginLeft: 12,
+
     fontSize: 20,
     fontWeight: '700',
     color: '#111',
-
-    marginLeft: 10,
-    flexShrink: 1,
   },
 
-  iconButton: {
-    width: 36,
-    height: 36,
-
-    borderRadius: 18,
-
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    backgroundColor: '#F5F5F5',
-  },
 });
