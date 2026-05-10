@@ -1,12 +1,9 @@
 import { useCallback } from 'react';
-
 import { useDispatch } from 'react-redux';
-
 import {
   useAddToCartMutation,
   useGetProductByIdQuery,
 } from '../redux/api/appApis';
-
 import { addToCart } from '../redux/slices/cartSlice';
 import { ToastAndroid } from 'react-native';
 

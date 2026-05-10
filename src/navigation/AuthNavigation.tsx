@@ -7,10 +7,7 @@ import ProductDetails from '../screens/authScreen/ProductDetails';
 import ProductCart from '../screens/authScreen/ProductCart';
 
 const Stack = createNativeStackNavigator();
-
-
 const AuthNavigation = () => {
-
     return (
         <Stack.Navigator initialRouteName={SCREENS.HOME}>
 

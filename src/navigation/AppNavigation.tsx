@@ -1,15 +1,10 @@
 import { StyleSheet, ActivityIndicator, View } from 'react-native';
 import React, { useEffect } from 'react';
-
 import { NavigationContainer } from '@react-navigation/native';
-
 import AuthNavigation from './AuthNavigation';
 import LoginScreen from '../screens/LoginScreen';
-
 import { useDispatch, useSelector } from 'react-redux';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import {
     setCredentials,
     setAuthChecked,

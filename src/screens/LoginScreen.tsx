@@ -3,7 +3,6 @@ import {
     Text,
     TextInput,
     ToastAndroid,
-    TouchableOpacity,
     View,
 } from 'react-native';
 import React, { useState } from 'react';
@@ -53,7 +52,7 @@ const LoginScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <Text style={styles.title}>Welcome Back 👋</Text>
+                <Text style={styles.title}>Hi, Welcome 👋</Text>
                 <Text style={styles.subtitle}>
                     Login to continue shopping
                 </Text>
@@ -148,11 +147,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 10,
-    },
-
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
     },
 });

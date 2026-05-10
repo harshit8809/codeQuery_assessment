@@ -2,9 +2,7 @@ import {
     useMemo,
     useState,
   } from 'react';
-  
   import useDebounce from './useDebounce';
-  
   import {
     useGetProductsQuery,
   } from '../redux/api/appApis';
