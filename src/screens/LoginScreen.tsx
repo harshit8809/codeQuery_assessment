@@ -15,8 +15,8 @@ import BaseButton from '../components/BaseButton';
 
 
 const LoginScreen = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('mor_2314');
+    const [password, setPassword] = useState('83r5^_');
     const [login, { isLoading }] = useLoginMutation();
 
     const dispatch = useDispatch();
@@ -62,6 +62,7 @@ const LoginScreen = () => {
                     <Text style={styles.label}>Email / Username</Text>
                     <TextInput
                         placeholder="Enter email or username"
+                        placeholderTextColor={"gray"}
                         value={email}
                         onChangeText={setEmail}
                         style={styles.input}
@@ -75,6 +76,7 @@ const LoginScreen = () => {
                     <TextInput
                         placeholder="Enter password"
                         value={password}
+                        placeholderTextColor={"gray"}
                         onChangeText={setPassword}
                         style={styles.input}
                         secureTextEntry
@@ -138,6 +140,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         fontSize: 16,
         backgroundColor: '#f9f9f9',
+        color: "#000"
     },
 
     button: {

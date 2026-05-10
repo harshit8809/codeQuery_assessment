@@ -17,7 +17,7 @@ const AuthNavigation = () => {
                 options={{
                     header: () => (
                         <CommonHeader
-                            title="Product Details"
+                            title="Explore Product"
                             showCart
                             showLogout
                         />
